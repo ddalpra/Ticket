@@ -1,0 +1,172 @@
+{
+  "realm": "ticket",
+  "displayName": "Ticket System",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+
+  "roles": {
+    "realm": [
+      {
+        "name": "customer",
+        "description": "Cliente che apre e segue i propri ticket"
+      },
+      {
+        "name": "support_l1",
+        "description": "Operatore di supporto primo livello"
+      },
+      {
+        "name": "support_l2",
+        "description": "Operatore di supporto secondo livello"
+      },
+      {
+        "name": "supervisor",
+        "description": "Supervisore del centro servizi"
+      }
+    ]
+  },
+
+  "clients": [
+    {
+      "clientId": "ticket-service",
+      "name": "Ticket Service Backend",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "ticket-service-secret",
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "protocolMappers": [
+        {
+          "name": "realm roles mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "ticket-frontend",
+      "name": "Ticket Frontend SPA",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:4000/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4000",
+        "http://localhost:3000"
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "username": "supervisor1",
+      "email": "supervisor1@example.com",
+      "firstName": "Mario",
+      "lastName": "Rossi",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Password1!", "temporary": false }],
+      "realmRoles": ["supervisor"]
+    },
+    {
+      "username": "daniele1",
+      "email": "daniele1@acme.com",
+      "firstName": "Daniele",
+      "lastName": "Acme",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Password1!", "temporary": false }],
+      "realmRoles": ["customer"]
+    },
+    {
+      "username": "davide1",
+      "email": "davide1@acme.com",
+      "firstName": "Davide",
+      "lastName": "Acme",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Password1!", "temporary": false }],
+      "realmRoles": ["customer"]
+    },
+    {
+      "username": "filippo1",
+      "email": "filippo1@pippo.com",
+      "firstName": "Filippo",
+      "lastName": "Pippo",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Password1!", "temporary": false }],
+      "realmRoles": ["customer"]
+    },
+    {
+      "username": "supportl1",
+      "email": "support.l1@centro.com",
+      "firstName": "Luigi",
+      "lastName": "Support",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Password1!", "temporary": false }],
+      "realmRoles": ["support_l1"]
+    },
+    {
+      "username": "supportl2",
+      "email": "support.l2@centro.com",
+      "firstName": "Sara",
+      "lastName": "Support",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "Password1!", "temporary": false }],
+      "realmRoles": ["support_l2"]
+    }
+  ],
+
+  "passwordPolicy": "length(8) and upperCase(1) and digits(1) and specialChars(1)",
+
+  "accessTokenLifespan": 300,
+  "refreshTokenMaxReuse": 0,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000
+}

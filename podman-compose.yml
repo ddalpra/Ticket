@@ -1,0 +1,105 @@
+version: "3.9"
+
+networks:
+  ticket-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  keycloak-data:
+
+services:
+
+  # ─── PostgreSQL ───────────────────────────────────────────────────────────
+  postgres:
+    image: docker.io/postgres:16-alpine
+    container_name: ticket-postgres
+    restart: unless-stopped
+    networks:
+      - ticket-net
+    environment:
+      POSTGRES_DB: ticketdb
+      POSTGRES_USER: ticket
+      POSTGRES_PASSWORD: ticket_secret
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticket -d ticketdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Keycloak ─────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: ticket-keycloak
+    restart: unless-stopped
+    networks:
+      - ticket-net
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/ticketdb
+      KC_DB_USERNAME: ticket
+      KC_DB_PASSWORD: ticket_secret
+      KC_DB_SCHEMA: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin_secret
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_LOG_LEVEL: info
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200'"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ─── Go Application ───────────────────────────────────────────────────────
+  app:
+    build:
+      context: ./ticket-service
+      dockerfile: Dockerfile
+    container_name: ticket-app
+    restart: unless-stopped
+    networks:
+      - ticket-net
+    environment:
+      DATABASE_URL: postgres://ticket:ticket_secret@postgres:5432/ticketdb?sslmode=disable
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ticket
+      KEYCLOAK_CLIENT_ID: ticket-service
+      KEYCLOAK_CLIENT_SECRET: ticket-service-secret
+      SERVER_PORT: 3000
+      GIN_MODE: debug
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  # ─── Adminer (DB GUI) ─────────────────────────────────────────────────────
+  adminer:
+    image: docker.io/adminer:latest
+    container_name: ticket-adminer
+    restart: unless-stopped
+    networks:
+      - ticket-net
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
