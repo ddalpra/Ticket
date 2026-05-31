@@ -1,3 +1,6 @@
 [submodule "ticket-service"]
 	path = ticket-service
 	url = https://github.com/ddalpra/ticket-service.git
+[submodule "ticket-ui"]
+	path = ticket-ui
+	url = https://github.com/ddalpra/ticket-ui.git
