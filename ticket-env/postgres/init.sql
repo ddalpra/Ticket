@@ -5,4 +5,4 @@ CREATE SCHEMA IF NOT EXISTS keycloak;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Grant permessi a keycloak schema
-	GRANT ALL PRIVILEGES ON SCHEMA keycloak TO ticket;
+GRANT ALL PRIVILEGES ON SCHEMA keycloak TO ticket;

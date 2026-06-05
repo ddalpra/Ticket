@@ -61,16 +61,16 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200'"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200'"]
       interval: 20s
       timeout: 10s
       retries: 10
       start_period: 60s
 
-  # ─── Go Application ───────────────────────────────────────────────────────
+  # ─── Go Backend ───────────────────────────────────────────────────────────
   app:
     build:
-      context: ./ticket-service
+      context: ./app
       dockerfile: Dockerfile
     container_name: ticket-app
     restart: unless-stopped
@@ -83,7 +83,7 @@ services:
       KEYCLOAK_CLIENT_ID: ticket-service
       KEYCLOAK_CLIENT_SECRET: ticket-service-secret
       SERVER_PORT: 3000
-      GIN_MODE: debug
+      GIN_MODE: release
     ports:
       - "3000:3000"
     depends_on:
@@ -91,6 +91,35 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─── Angular Frontend ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ../ticket-ui-fresh
+      dockerfile: ../ticket-env/frontend/Dockerfile
+    container_name: ticket-frontend
+    restart: unless-stopped
+    networks:
+      - ticket-net
+    ports:
+      - "4200:80"
+    depends_on:
+      app:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # ─── Adminer (DB GUI) ─────────────────────────────────────────────────────
   adminer:

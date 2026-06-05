@@ -178,3 +178,28 @@ status: ## Mostra stato dettagliato
 help: ## Mostra questo help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' | sort
+
+# ── Frontend ──────────────────────────────────────────────────────────────────
+
+.PHONY: build-frontend
+build-frontend: ## Build immagine frontend Angular
+	$(COMPOSE) -f $(COMPOSE_FILE) build frontend
+
+.PHONY: rebuild-frontend
+rebuild-frontend: ## Rebuild e restart frontend (dopo modifiche al codice)
+	$(COMPOSE) -f $(COMPOSE_FILE) build --no-cache frontend
+	$(COMPOSE) -f $(COMPOSE_FILE) up -d --force-recreate frontend
+
+.PHONY: logs-frontend
+logs-frontend: ## Log del container frontend
+	$(COMPOSE) -f $(COMPOSE_FILE) logs -f frontend
+
+.PHONY: up-full
+up-full: ## Avvia TUTTI i servizi incluso frontend
+	$(COMPOSE) -f $(COMPOSE_FILE) up -d
+	@echo ""
+	@echo "  Servizi attivi:"
+	@echo "    Frontend  → http://localhost:4200"
+	@echo "    Backend   → http://localhost:3000"
+	@echo "    Keycloak  → http://localhost:8080"
+	@echo "    Adminer   → http://localhost:8081"
